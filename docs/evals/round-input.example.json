@@ -1,0 +1,105 @@
+{
+  "schema_version": "1.0",
+  "kind": "cold-start-round-input",
+  "example_only": true,
+  "run_id": "<new-run-id>",
+  "case_id": "<neutral-case-id>",
+  "frozen_skill": {
+    "entry": "<frozen-package-entry>",
+    "source_revision": "<fixed-revision-or-snapshot-id>",
+    "source_tree_sha256": null,
+    "package_manifest_sha256": null,
+    "read_only": true
+  },
+  "execution_context": {
+    "fresh_conversation": true,
+    "inherited_component_context": false,
+    "model_id": "<fixed-model-id>",
+    "model_settings_ref": "<frozen-model-settings>",
+    "toolset_sha256": null,
+    "clean_brief_sha256": null,
+    "input_digest_storage": "外部冻结清单记录本文件字节哈希，不把自身哈希写回本文件"
+  },
+  "user_authorization": {
+    "evidence_ref": null,
+    "allowed_actions": [],
+    "write_roots": [],
+    "resource_allocation_ref": null,
+    "remote_execution_authorized": false,
+    "install_or_activation_authorized": false,
+    "commit_push_merge_authorized": false,
+    "scope_or_numerical_contract_change_authorized": false
+  },
+  "source": {
+    "locator": "<original-source-locator>",
+    "revision": "<full-fixed-source-revision>",
+    "tree_sha256": null,
+    "dependency_manifest_ref": "<fixed-dependencies-and-submodules>",
+    "pristine_root": "<read-only-original-source-root>",
+    "prior_patches_or_generated_trees": []
+  },
+  "scope": {
+    "selection_mode": "auto",
+    "requested_route": null,
+    "user_route_constraint_ref": null,
+    "required_features": [
+      {
+        "id": "<stable-required-feature-id>",
+        "definition": "<功能、输入、dtype、边界及公共接口合同>",
+        "original_test_and_oracle_ref": "<原测试、独立参考与原始容差出处>",
+        "required_gpu_cases_ref": "<必须实际运行的GPU用例清单>",
+        "required_stages": ["build", "load", "gpu", "correctness", "integration", "clean-rebuild"]
+      }
+    ],
+    "allowed_skip_reasons": [],
+    "performance_contract_ref": "<测量输入、基线、噪声与退步判据或明确未约定理由>",
+    "original_platform_contract_ref": "<原平台回归要求及不可用时的报告规则>"
+  },
+  "environment": {
+    "target_reference": "<user-confirmed-target-reference>",
+    "initialized_base_identity_ref": "<measured-base-environment-manifest>",
+    "reuse_initialized_base": true,
+    "equivalence_measurement_ref": null,
+    "gpu_allocation_ref": null,
+    "wavefront_size": null,
+    "remote_workflow": "读取ssh-mcp-persistent-shell；复用SSH MCP持久会话及正常Bash启动环境",
+    "shared_cache_policy": "保留共享缓存，不删除；核实共享依赖身份，隔离任务生成缓存",
+    "hardware_cache_policy": "不默认禁用；诊断变更需证据、授权及恢复后的验收"
+  },
+  "new_task_roots": {
+    "adaptation": "<new-adaptation-root>",
+    "generated": "<new-generated-root>",
+    "build": "<new-build-root>",
+    "install": "<new-install-prefix>",
+    "task_cache": "<new-task-cache-namespace>",
+    "evidence": "<new-evidence-root>"
+  },
+  "hcu_tile_policy": {
+    "preference": "tile=warpSize",
+    "fixed_64_requires_measured_wave64": true,
+    "joint_review": ["task-to-lane mapping", "masks", "shuffles and collectives", "storage", "block/grid and coverage"],
+    "preserve": ["public API and ABI", "format width L", "layout", "original numerical and test contracts", "non-HCU branches"],
+    "fallback": "完整wave无法等价承接原分组时，保留原逻辑tile并用phase或串行循环",
+    "speedup_is_unproven_without_measurements": true
+  },
+  "budget": {
+    "wall_seconds": null,
+    "command_limit": null,
+    "token_limit": null,
+    "attempt_limit": null,
+    "no_progress_stop_rule": "相同根因没有新证据或有效假设时停止，不为凑次数重试"
+  },
+  "independence": {
+    "allowed_inputs": ["clean_brief", "frozen_skill", "fixed_original_source", "original_tests", "current_environment_facts", "approved_generic_references"],
+    "forbidden_inputs": ["prior_component_decisions", "old_reports_or_receipts", "existing_adaptation_patches", "previous_generated_trees", "old_component_binaries", "previous_task_caches"],
+    "freeze_skill_during_run": true,
+    "skill_or_input_change_requires_new_run_id": true,
+    "contamination_must_be_reported": true
+  },
+  "delivery": {
+    "raw_commands_and_logs_required": true,
+    "separate_real_success_blocked_skipped_not_run": true,
+    "record_avoidable_build_failures_attempts_wrong_changes_costs_and_scope_drift": true,
+    "notes": "仅为未运行的结构示例。补齐占位符、身份、范围、预算与真实用户授权后，维护者另行冻结并交付清洁简报。"
+  }
+}
