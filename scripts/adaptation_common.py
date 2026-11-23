@@ -377,12 +377,19 @@ def scan_project(repo: str | Path, target: str | None = None) -> dict[str, Any]:
         for number, line in enumerate(text.splitlines(), 1):
             for kind, pattern in (("native", native), ("cuda", cuda)):
                 if pattern.search(line):
-                    evidence.append({"kind": kind, "file": path.relative_to(root).as_posix(), "line": number, "text": line.strip()})
+                    entry = {"kind": kind, "file": path.relative_to(root).as_posix(), "line": number, "text": line.strip()}
+                    # PyTorch uses the same extension class for HIP and CUDA inputs.
+                    if kind == "cuda" and "CUDAExtension" in line and not cuda.search(line.replace("CUDAExtension", "")):
+                        entry["framework_hint_only"] = True
+                    evidence.append(entry)
         if path.suffix == ".hip":
             evidence.append({"kind": "native", "file": path.relative_to(root).as_posix(), "line": None, "text": "HIP source file; confirm target membership"})
         elif path.suffix in {".cu", ".cuh"}:
             evidence.append({"kind": "cuda", "file": path.relative_to(root).as_posix(), "line": None, "text": "CUDA source/header candidate; confirm target membership and backend"})
-    return {"root": str(scan_root), "root_entries": sorted(entries), "native_candidate": any(e["kind"] == "native" for e in evidence), "cuda_candidate": any(e["kind"] == "cuda" for e in evidence), "evidence": evidence, "coverage": "static target-directory candidates; conditionals, dependency backends and actual membership require confirmation"}
+    kinds = {entry["kind"] for entry in evidence}
+    native_candidate = "native" in kinds
+    cuda_candidate = "cuda" in kinds
+    return {"root": str(scan_root), "root_entries": sorted(entries), "native_candidate": native_candidate, "cuda_candidate": cuda_candidate, "evidence": evidence, "coverage": "static target-directory candidates; conditionals, dependency backends and actual membership require confirmation"}
 
 
 def new_plan(route: str, request: dict[str, Any], scan: dict[str, Any] | None = None) -> dict[str, Any]:

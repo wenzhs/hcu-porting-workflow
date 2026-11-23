@@ -105,6 +105,16 @@ class RouteTests(unittest.TestCase):
             with self.subTest(fastpt=fastpt):
                 self.assertEqual(route_preflight.plan_request(request)["route"], "transcode")
 
+    def test_mixed_target_defaults_to_transcode_and_respects_explicit_routes(self):
+        (self.repo / "kernel.cu").write_text("__global__ void cuda_kernel() {}\n")
+        for route, expected in (("auto", "transcode"), ("native-hip", "native-hip"),
+                                ("non-transcode", "non-transcode")):
+            with self.subTest(route=route):
+                result = route_preflight.plan_request(self.request(), route)
+                self.assertEqual(result["route"], expected)
+                self.assertEqual(result["selection_mode"], "auto" if route == "auto" else "explicit")
+                self.assertFalse(result["executed"])
+
     def test_unavailable_native_requires_nonblank_reason(self):
         for reason in (None, "", " \t", False, 42):
             request = self.request()
@@ -122,17 +132,18 @@ class RouteTests(unittest.TestCase):
         (self.repo / "kernel.cu").write_text("__global__ void k() {}\n")
         self.assertEqual(route_preflight.plan_request(request)["route"], "transcode")
 
-    def test_hcu_framework_marker_is_native_candidate_only(self):
+    def test_framework_hip_marker_with_cuda_input_defaults_to_transcode(self):
         self.cuda_only()
         request = self.request()
-        request["capabilities"].pop("native_backend")
+        request["capabilities"]["converters"] = {"project-hipify": dict.fromkeys(transcode.CAPABILITY_FIELDS, True)}
         for expression in ("torch.version.hcu", "getattr(torch.version, 'hcu', None)",
                            'getattr( torch.version , "hip" , None )'):
             (self.repo / "setup.py").write_text(f"use_hcu = {expression} is not None\nCUDAExtension(...)\n")
             with self.subTest(expression=expression):
                 plan = route_preflight.plan_request(request)
-                self.assertEqual(plan["route"], "native-hip")
-                self.assertEqual(plan["plan_status"], "needs-information")
+                self.assertEqual(plan["route"], "transcode")
+                self.assertEqual(plan["provider"], "project-hipify")
+                self.assertEqual(plan["plan_status"], "planned")
 
     def test_auto_known_fastpt_mismatch_reaches_transcode_candidate(self):
         self.cuda_only()

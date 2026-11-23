@@ -75,7 +75,15 @@ def plan_request(request: dict[str, Any], requested_route: str = "auto", *, avai
     scan = scan_project(repo, item.get("target"))
     selection_mode = "auto" if requested_route == "auto" else "explicit"
     decisions = []
-    if requested_route == "auto":
+    if requested_route != "auto":
+        selected = requested_route
+        decisions.append("Explicit route is fixed; no other route will be probed or executed")
+    elif scan["cuda_candidate"] and (not scan["native_candidate"] or any(
+        entry["kind"] == "cuda" and not entry.get("framework_hint_only") for entry in scan["evidence"]
+    )):
+        selected = "transcode"
+        decisions.append("CUDA target defaults to source conversion; reuse the project's HIPIFY pipeline when present")
+    else:
         backend = capabilities.get("native_backend", {})
         if not isinstance(backend, dict):
             raise AdaptationError("capabilities.native_backend must be an object for automatic selection")
@@ -84,34 +92,15 @@ def plan_request(request: dict[str, Any], requested_route: str = "auto", *, avai
         if state not in ("available", "unavailable", "unknown"):
             raise AdaptationError("Invalid native_backend state")
         reason = backend.get("reason")
-        has_reason = isinstance(reason, str) and bool(reason.strip())
-        rejected_native = state == "unavailable" and has_reason
-        if scan["native_candidate"] or state == "available" or (state == "unavailable" and not has_reason):
-            if not rejected_native:
-                selected = "native-hip"
-                decisions.append("Native candidate first; unknown prerequisites do not authorize fallback")
-            else:
-                selected = None
-                decisions.append("Native unavailable: " + str(backend["reason"]))
+        rejected_native = state == "unavailable" and isinstance(reason, str) and bool(reason.strip())
+        if not rejected_native and (scan["native_candidate"] or state in ("available", "unavailable")):
+            selected = "native-hip"
+            decisions.append("Native HIP candidate with no CUDA input identified in the inspected target")
         else:
-            selected = None
-            decisions.append("No native candidate confirmed in the inspected target scope")
-        if selected is None:
-            if not scan["cuda_candidate"] and not scan["native_candidate"]:
-                return {"schema_version": SCHEMA_VERSION, "kind": "adaptation-plan", "route": "none", "selection_mode": "auto", "scope": {"repo": str(repo), "target": item.get("target")}, "source": source_identity(repo), "scan": scan, "plan_status": "needs-information", "executed": False, "stages": {}, "warnings": ["No GPU build surface was detected; confirm scope manually. This is not an adaptation success."], "selection_evidence": decisions}
-            # A CUDA-only target has no native source route.  Auto policy therefore
-            # selects the explicit CUDA-to-HIP provider route; FastPT availability
-            # must not silently change that default.  Non-transcode remains an
-            # explicit choice for callers who have separately established its
-            # CUDA-facing prerequisites.
-            if scan["cuda_candidate"]:
-                selected = "transcode"
-                decisions.append("No native candidate or native explicitly unavailable, with CUDA surface: auto selects transcode; FastPT state does not decide the route")
-            else:
-                return {"schema_version": SCHEMA_VERSION, "kind": "adaptation-plan", "route": "none", "selection_mode": "auto", "scope": {"repo": str(repo), "target": item.get("target")}, "source": source_identity(repo), "scan": scan, "plan_status": "blocked" if rejected_native else "needs-information", "executed": False, "stages": {}, "warnings": ["Native backend is unavailable and no CUDA adaptation surface was found; no route can be selected."], "selection_evidence": decisions}
-    else:
-        selected = requested_route
-        decisions.append("Explicit route is fixed; no other route will be probed or executed")
+            blocked = scan["native_candidate"] and rejected_native
+            warning = ("Native backend unavailable: " + reason if blocked else
+                       "No GPU build surface was detected; confirm target scope manually.")
+            return {"schema_version": SCHEMA_VERSION, "kind": "adaptation-plan", "route": "none", "selection_mode": "auto", "scope": {"repo": str(repo), "target": item.get("target")}, "source": source_identity(repo), "scan": scan, "plan_status": "blocked" if blocked else "needs-information", "executed": False, "stages": {}, "warnings": [warning], "selection_evidence": [warning]}
     if selected not in available_routes:
         raise AdaptationError(f"Route is not present in this standalone package: {selected}")
     item["repo"] = str(repo)

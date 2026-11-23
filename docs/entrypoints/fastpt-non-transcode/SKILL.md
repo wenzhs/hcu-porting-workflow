@@ -1,6 +1,6 @@
 ---
 name: fastpt-non-transcode
-description: 使用匹配的 FastPT/GPUFusion 在 HCU/DCU（DTK）保留 CUDA 源码进行编译和测试。用于用户明确要求不转码、保留 CUDA 源码或指定 FastPT 不转码路线的适配任务。
+description: 使用匹配的 FastPT/GPUFusion 在 HCU/DCU（DTK）直接编译原 CUDA 源码并测试。仅用于用户明确指定不转码、直接编译原 CUDA 源码或指定 FastPT 不转码路线的任务。
 ---
 
 # FastPT 不转码适配

@@ -48,7 +48,7 @@ class PackageTests(unittest.TestCase):
             self.assertTrue(json.loads(result.stdout)['valid'])
 
     def test_each_skill_runs_alone_after_relocation(self):
-        expected = {'hcu-native-adaptation': 'native-hip', 'fastpt-non-transcode': 'non-transcode', 'hcu-transcode': 'transcode', 'hcu-porting-workflow': 'native-hip'}
+        expected = {'hcu-native-adaptation': 'native-hip', 'fastpt-non-transcode': 'non-transcode', 'hcu-transcode': 'transcode', 'hcu-porting-workflow': 'transcode'}
         # A standalone parent contains exactly one package, no sibling skill.
         for index, name in enumerate(exporter.NAMES):
             isolated = self.base / f'isolated parent {index}' / 'renamed skill with spaces'

@@ -1,6 +1,6 @@
 ---
 name: hcu-porting-workflow
-description: 将 CUDA、HIP 或 ROCm 应用与组件移植到 HCU/DCU（DTK）并完成验证，覆盖分支确认、可行性分析、代码与依赖分析、编译构建和原测试。支持原生 HIP、CUDA 源码转码和用户指定的 FastPT 不转码路线；也可只分析可行性，不负责 FastPT 自身跨版本升级。
+description: 将 CUDA、HIP 或 ROCm 应用与组件移植到 HCU/DCU（DTK）并验证。CUDA 输入默认做源码转码，纯 HIP 目标走原生构建。仅在用户明确要求保留 CUDA 源码直接编译时考虑不转码。支持可行性分析、依赖适配、构建和原测试，不负责 FastPT 自身跨版本升级。
 ---
 
 # HCU 软件移植工作流：分析、编译构建与测试
@@ -27,6 +27,7 @@ description: 将 CUDA、HIP 或 ROCm 应用与组件移植到 HCU/DCU（DTK）�
 | CUTLASS | hytlass/已适配实现只支持特定版本与接口子集；先固定版本、架构和实例，不能机械改名后宣称支持 |
 | PyTorch接口与HIPIFY代际 | 核对实际转换器与目标Torch；v2保留框架CUDA类名不等于停止runtime或header转换，见[版本差异与案例](references/pytorch-hipify.md) |
 | warp同步与逻辑tile | 不依赖NVIDIA ITS语义；核实物理wave后选择整wave等价映射或原tile的phase/串行回退，联动mask、存储与grid |
+| kernel 自旋或跨 kernel 轮询阻塞 | 用 `HSA_DISABLE_CACHE=1` 做单变量诊断；若恢复，追踪读写双方和同步地址的分配方式，在默认 cache 下复验。见[卡死定位与修复](references/common-errors-and-solutions.md)第 3 节 |
 
 ## 三、适配流程
 
@@ -46,7 +47,9 @@ description: 将 CUDA、HIP 或 ROCm 应用与组件移植到 HCU/DCU（DTK）�
 | 代码差异 | header、USE_ROCM/CUDA_VERSION/CUDA_ARCH、PTX/builtin、warp/mask、同步、精度/布局 | [代码转换](references/code-conversion.md)、[指令处理](references/instruction-porting.md) |
 | 测试方法 | 原仓/官方测试命令、输入、设备条件、GPU覆盖、原断言、完整约定范围 | [常见问题与解决](references/common-errors-and-solutions.md) |
 
-选路：**显式选择优先 → 复用当前target可用原生路径 → 只有CUDA路径时优先转码**。原生能力未知先核实；用户明确保留CUDA源码、指定FastPT/GPUFusion不转码时走不转码。混合工程逐target判断，项目原有HIPIFY不重复执行。
+按实际构建 target 选路。**有 CUDA 输入时默认转码**，包括同时提供 CUDA 和 HIP 后端的工程。优先复用工程或框架已有的 HIPIFY 链，核对原始输入、生成 HIP 源和实际编译单元。纯 HIP 目标沿原生入口构建；用户明确指定原生 HIP 时遵循该选择。
+
+**仅在用户明确要求时考虑不转码**，例如“保留 CUDA 源码用兼容编译器直接编译”或“走 FastPT/GPUFusion 不转码”。普通 HCU 适配即使现场有 DTK CUDA 兼容工具链也默认转码；转码受阻时按该路线定位并报告阻塞。编译前分析中记录选择不转码所依据的用户要求。
 
 构建前在实际编译仓根写`ADAPTATION_ANALYSIS.md`，保存基线、上述结论、路线、依赖方案、准备/转换/configure/build/安装/测试的实际命令和未决项。用[分析模板](docs/pre-build-analysis.md)，现有完整记录可以复用。纯分析请求直接返回这些内容即可。
 

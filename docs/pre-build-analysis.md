@@ -37,6 +37,6 @@
 执行前需补充：...
 ```
 
-原生能力未知不等于没有原生路径；CUDA-only 选转码不等于转换器已可用。依赖排除必须有批准来源。转换任务补原始根、生成根、映射/预计写集；当前解释器、环境及路线必须对应同一 target。
+含 CUDA 输入的目标默认转码。记录可复用的 HIPIFY 链、转换器能力、原始根、生成根、映射和预计写集。纯 HIP 目标沿原生入口构建；选择不转码时写明用户的显式要求。依赖排除须有批准来源。
 
 涉及PyTorch接口转换时，再记实际转换器模块/commit/代际、构建Python、最终映射与目标Torch的header/namespace对应关系；保留一个stream/guard/allocator加runtime的前后转换样例。格式与判别见[HIPIFY v1/v2案例](../references/pytorch-hipify.md)，不以Torch版本号单独决定全部映射。

@@ -1,6 +1,6 @@
 ---
 name: hcu-transcode
-description: 将 CUDA 应用源码转换为 HCU/DCU（DTK）可构建的 HIP 工程。用于明确要求 hipify/转码或 CUDA-only 的默认适配路线；核验转换器能力，维护源码映射、构建入口与原测试合同。
+description: 将 CUDA 应用源码转换为 HCU/DCU（DTK）可构建的 HIP 工程。用于含 CUDA 输入目标的默认适配路线及明确要求 hipify/转码的任务。复用适用的 HIPIFY 链，核验转换器、源码映射、实际编译入口与原测试。
 ---
 
 # CUDA 源码转码适配

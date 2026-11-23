@@ -7,7 +7,7 @@
 | 路线 | 编译输入 | 构建系统应做什么 | 不应做什么 |
 | --- | --- | --- | --- |
 | 原生HIP/ROCm/HCU | 原仓已有HIP实现/其框架原生生成源 | 沿用HIP开关、target和框架HIPIFY，修当前DTK差异 | 再叠加外部hipify、因CUDAExtension名字改判CUDA-only |
-| 主动转码 | 明确映射后的HIP源 | 转换先完成或由构建图生成；更新源路径、语言、库和flags | 保留原CUDA源一起重复编译，只有改后缀却没有真实转换 |
+| 源码转码（CUDA 输入的默认路线） | 映射后的 HIP 源 | 优先复用已有 HIPIFY 生成步骤；否则接入已核实的转换器，更新源路径、语言、库和 flags | 重复转换，或把原 CUDA 源和生成源同时编入同一 target |
 | FastPT不转码 | 原CUDA源 | 保留CUDA-facing入口和GPUFusion工具链 | 设置LANGUAGE HIP、混入HIP兼容头或执行HIPIFY |
 
 记录源码根、生成根、构建根、编译器、标准、gfx和实际configure/build/package命令。Conda不是前提，沿用容器/解释器的已有初始化；同一target不混用三条链。
